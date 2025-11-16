@@ -1,0 +1,11 @@
+2025/11/16-14:45:39.497 dbc Recovering log #9
+2025/11/16-14:45:39.499 dbc Level-0 table #12: started
+2025/11/16-14:45:39.508 dbc Level-0 table #12: 14757 bytes OK
+2025/11/16-14:45:39.524 dbc Delete type=0 #9
+2025/11/16-14:45:39.527 dbc Delete type=3 #7
+2025/11/16-14:57:19.649 80c Compacting 1@0 + 1@1 files
+2025/11/16-14:57:19.664 80c Generated table #14@0: 267 keys, 46759 bytes
+2025/11/16-14:57:19.665 80c Compacted 1@0 + 1@1 files => 46759 bytes
+2025/11/16-14:57:19.666 80c compacted to: files[ 0 1 0 0 0 0 0 ]
+2025/11/16-14:57:19.668 80c Delete type=2 #10
+2025/11/16-14:57:19.671 80c Delete type=2 #12
