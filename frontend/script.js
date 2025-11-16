@@ -110,7 +110,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     <div class="review-meta">
                         <b>User:</b> ${r.userId}<br>
                         <b>Product:</b> ${r.productId}<br>
-                        <b>Timestamp:</b> ${new Date(r.timestamp).toLocaleString()}
+                        <b>Timestamp:</b> ${new Date(r.timestamp * 1000).toLocaleString()}
                     </div>
                 </div>
             `).join("");
