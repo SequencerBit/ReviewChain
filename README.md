@@ -34,8 +34,6 @@ ReviewChain/
 - **Node.js** (v14 or higher)
 - **npm** (comes with Node.js)
 - **Ganache** (local Ethereum blockchain for development)
-- **MetaMask** or similar wallet (optional, for interacting with real networks)
-- **Truffle** or **Hardhat** (optional, for contract deployment and testing)
 
 ## Setup Instructions
 
