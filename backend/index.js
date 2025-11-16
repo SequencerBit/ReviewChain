@@ -15,6 +15,11 @@ const contractABI = [
 		"inputs": [
 			{
 				"internalType": "string",
+				"name": "_userId",
+				"type": "string"
+			},
+			{
+				"internalType": "string",
 				"name": "_productId",
 				"type": "string"
 			},
@@ -46,6 +51,11 @@ const contractABI = [
 		"outputs": [
 			{
 				"components": [
+					{
+						"internalType": "string",
+						"name": "userId",
+						"type": "string"
+					},
 					{
 						"internalType": "string",
 						"name": "productId",
@@ -92,6 +102,11 @@ const contractABI = [
 		"outputs": [
 			{
 				"internalType": "string",
+				"name": "userId",
+				"type": "string"
+			},
+			{
+				"internalType": "string",
 				"name": "productId",
 				"type": "string"
 			},
@@ -117,7 +132,7 @@ const contractABI = [
 ];
 
 // 3. Contract Address
-const contractAddress = '0x1e5D87C1563Ae2FBB68cEED8aF0b66B909709e06';
+const contractAddress = '0xFaC1f5136D0A96F4DA191EdE213FD6Ea158FC737';
 
 // 4. Account (Make sure this is one of your Ganache accounts)
 const myAccount = '0x164bF75d30A04604E466237F5ee3fDBBb6D27C3c';
@@ -179,9 +194,10 @@ app.post('/submit-review', async (req, res) => {
     // 3. --- BLOCKCHAIN CODE ---
     try {
         console.log('Sending transaction to blockchain...');
-        const { productId } = tokenData; 
+        const { userId, productId } = tokenData; 
         
         await reviewContract.methods.addReview(
+            userId,
             productId,
             rating,
             comment
@@ -213,6 +229,7 @@ app.get('/reviews/:productId', async (req, res) => {
         // Convert BigInts to strings for JSON serialization
         const serializableReviews = reviews.map(review => {
             return {
+                userId: review.userId,
                 productId: review.productId,
                 rating: review.rating.toString(), // Convert BigInt to string
                 comment: review.comment,

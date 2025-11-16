@@ -10,6 +10,7 @@ contract ReviewContract {
     // This is a "struct," like a custom data type or a class object.
     // It defines what a "Review" looks like.
     struct Review {
+        string userId;
         string productId;
         uint8 rating;       // A number from 0-255 (perfect for 1-5 stars)
         string comment;
@@ -24,13 +25,14 @@ contract ReviewContract {
      * @dev Adds a new review to a product's review array.
      * This is the ONLY function our API will "write" to.
      */
-    function addReview(string memory _productId, uint8 _rating, string memory _comment) public {
+    function addReview(string memory _userId, string memory _productId, uint8 _rating, string memory _comment) public {
         
         // Get the current time from the blockchain
         uint _timestamp = block.timestamp;
         
         // Create the new Review object in memory
         Review memory newReview = Review(
+            _userId,
             _productId,
             _rating,
             _comment,
