@@ -1,11 +1,139 @@
 const express = require('express');
+const crypto = require('crypto');
+const { Web3 } = require('web3'); // Correct import for modern web3
+const cors = require('cors'); // Import cors
+
+// --- START: BLOCKCHAIN CONNECTION ---
+
+// 1. Connection Details
+const ganacheUrl = 'http://127.0.0.1:7545';
+const web3 = new Web3(ganacheUrl); // Correct constructor for modern web3
+
+// 2. Contract ABI
+const contractABI = [
+	{
+		"inputs": [
+			{
+				"internalType": "string",
+				"name": "_productId",
+				"type": "string"
+			},
+			{
+				"internalType": "uint8",
+				"name": "_rating",
+				"type": "uint8"
+			},
+			{
+				"internalType": "string",
+				"name": "_comment",
+				"type": "string"
+			}
+		],
+		"name": "addReview",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "string",
+				"name": "_productId",
+				"type": "string"
+			}
+		],
+		"name": "getReviewsByProduct",
+		"outputs": [
+			{
+				"components": [
+					{
+						"internalType": "string",
+						"name": "productId",
+						"type": "string"
+					},
+					{
+						"internalType": "uint8",
+						"name": "rating",
+						"type": "uint8"
+					},
+					{
+						"internalType": "string",
+						"name": "comment",
+						"type": "string"
+					},
+					{
+						"internalType": "uint256",
+						"name": "timestamp",
+						"type": "uint256"
+					}
+				],
+				"internalType": "struct ReviewContract.Review[]",
+				"name": "",
+				"type": "tuple[]"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "string",
+				"name": "",
+				"type": "string"
+			},
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"name": "reviewsByProduct",
+		"outputs": [
+			{
+				"internalType": "string",
+				"name": "productId",
+				"type": "string"
+			},
+			{
+				"internalType": "uint8",
+				"name": "rating",
+				"type": "uint8"
+			},
+			{
+				"internalType": "string",
+				"name": "comment",
+				"type": "string"
+			},
+			{
+				"internalType": "uint256",
+				"name": "timestamp",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	}
+];
+
+// 3. Contract Address
+const contractAddress = '0x1e5D87C1563Ae2FBB68cEED8aF0b66B909709e06';
+
+// 4. Account (Make sure this is one of your Ganache accounts)
+const myAccount = '0x164bF75d30A04604E466237F5ee3fDBBb6D27C3c';
+
+// 5. Create the Contract Object
+const reviewContract = new web3.eth.Contract(contractABI, contractAddress);
+
+console.log('Connected to Ganache and contract is loaded.');
+
 const app = express();
-const port = process.env.PORT || 8000;
+const port = process.env.PORT || 3000;
 const reviewTokens = new Map();
-app.use(express.json());
-app.listen(port, () => {
-  console.log(`Server is running on port ${port}`);
-});
+app.use(express.json()); // Middleware to parse JSON bodies
+app.use(cors()); // Middleware to allow cross-origin requests
+
+// Endpoint to request a token
 app.post('/request-review-token', (req, res) => {
   const { userId, productId } = req.body;
 
@@ -24,38 +152,85 @@ app.post('/request-review-token', (req, res) => {
     used: false
   });
 
+  console.log(`Issued token ${token} for ${userId} / ${productId}`);
   // Return the token
   res.json({ reviewToken: token });
 });
-app.post('/submit-review', (req, res) => {
-  const { reviewToken, rating, comment } = req.body;
 
-  if (!reviewToken) {
-    return res.status(400).json({ error: "reviewToken is required" });
-  }
+// Endpoint to submit a review
+app.post('/submit-review', async (req, res) => { 
+    
+    const { reviewToken, rating, comment } = req.body;
+    const tokenData = reviewTokens.get(reviewToken);
 
-  // Lookup token
-  const tokenData = reviewTokens.get(reviewToken);
+    // 1. Validation logic
+    if (!tokenData) {
+        console.warn(`Invalid token received: ${reviewToken}`);
+        return res.status(403).send('Invalid token.');
+    }
+    if (tokenData.used) {
+        console.warn(`Used token received: ${reviewToken}`);
+        return res.status(403).send('Token has already been used.');
+    }
 
-  // Validation
-  if (!tokenData) {
-    return res.status(403).json({ error: "Invalid token" });
-  }
+    // 2. Mark token as used
+    tokenData.used = true;
 
-  if (tokenData.used) {
-    return res.status(403).json({ error: "Token already used" });
-  }
+    // 3. --- BLOCKCHAIN CODE ---
+    try {
+        console.log('Sending transaction to blockchain...');
+        const { productId } = tokenData; 
+        
+        await reviewContract.methods.addReview(
+            productId,
+            rating,
+            comment
+        ).send({ from: myAccount, gas: '1000000' });
 
-  // Token is valid → mark as used
-  tokenData.used = true;
+        console.log('Transaction successful!');
+        res.status(200).send({ message: 'Review successfully submitted to the blockchain!' });
 
-  // (Later: integrate Web3.js here)
-  console.log("Received review:", {
-    userId: tokenData.userId,
-    productId: tokenData.productId,
-    rating,
-    comment
-  });
+    } catch (error) {
+        console.error('Blockchain write error:', error);
+        // Un-mark the token so they can try again
+        tokenData.used = false; 
+        res.status(500).send({ message: 'Error writing review to blockchain.' });
+    }
+});
 
-  return res.json({ success: true, message: "Review submitted" });
+// Endpoint to get reviews for a product
+app.get('/reviews/:productId', async (req, res) => {
+    
+    const { productId } = req.params;
+
+    try {
+        console.log(`Fetching reviews for product: ${productId}`);
+
+        // Get reviews from blockchain
+        const reviews = await reviewContract.methods.getReviewsByProduct(productId).call();
+
+        // --- START: BIGINT FIX ---
+        // Convert BigInts to strings for JSON serialization
+        const serializableReviews = reviews.map(review => {
+            return {
+                productId: review.productId,
+                rating: review.rating.toString(), // Convert BigInt to string
+                comment: review.comment,
+                timestamp: review.timestamp.toString() // Convert BigInt to string
+            }
+        });
+        // --- END: BIGINT FIX ---
+
+        // Send the new, safe array
+        res.status(200).json(serializableReviews);
+
+    } catch (error) {
+        console.error('Blockchain read error:', error);
+        res.status(500).send({ message: 'Error reading reviews from blockchain.' });
+    }
+});
+
+// Start the server
+app.listen(port, () => {
+  console.log(`Server is running on port ${port}`);
 });
