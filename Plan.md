@@ -39,7 +39,7 @@ This is the clever part. The blockchain can't check a host's order history. So, 
 
 2.  **Step 2: Token Generation (Our API)**
     * Our **Review API** receives this, trusts the Host Platform, and generates a unique, **one-time-use token** (e.g., `abc-123`).
-    * It stores this token in a simple list (a JavaScript `Map`) like this: `reviewTokens.set("abc-123", { productId: "product-X", used: false })`.
+    * It stores this token in a simple list (a JavaScript `Map`) like this: `reviewTokens.set("abc-123", { userId: "user-A", productId: "product-X", used: false })`.
     * It sends the token back to the Host Platform's server.
 
 3.  **Step 3: Submission (Frontend-to-API)**
@@ -65,7 +65,7 @@ This is the clever part. The blockchain can't check a host's order history. So, 
 * **API Server:** **Node.js** & **Express** (Free).
 * **API <-> Blockchain Link:** **Web3.js** (A Node.js library).
 * **API Tester:** **Postman** (Free desktop app).
-* **Host Simulator:** A single `index.html` file with vanilla JavaScript (`fetch`).
+* **Host Simulator:** A single `index.html` file + `script.js` file (vanilla JavaScript).
 
 ---
 
@@ -85,15 +85,15 @@ This is how we'll get it done in 4 hours.
 * **Goal:** Connect the API (Student 2) to the Blockchain (Student 1).
 * **Tools:** VS Code, Web3.js, Postman.
 
-### Student 4: Frontend/Tester (The "Host")
-* **Goal:** Build a simple HTML page to *simulate* the Host Platform and test the entire flow.
-* **Tools:** VS Code, Web Browser, Postman.
+### Student 4: Frontend/Dashboard Lead (The "Host Simulator")
+* **Goal:** Build an interactive "Host Simulator Dashboard" to simulate multiple users, multiple products, and test the full API flow.
+* **Tools:** VS Code, 1 `index.html` file, 1 `script.js` file, Web Browser.
 
 ---
 
 ## 5. ✅ Detailed Task Checklist
 
-### **[Student 1: Blockchain Lead]**
+### **[Student 1: Blockchain Lead] (No Change)**
 
 * [ ] **(0:00 - 0:15)** Download, install, and run **Ganache**.
 * [ ] **(0:15 - 0:30)** Click "Quickstart" to launch a local blockchain. Keep it running.
@@ -107,15 +107,15 @@ This is how we'll get it done in 4 hours.
 * [ ] **(2:30 - 2:45)** **Deliverable:** Copy the **Contract ABI** and the **Contract Address**. Share these two pieces of text (e.g., in a `.txt` file) with **Student 3**.
 * [ ] **(2:45 - 4:00)** Assist Student 3 with integration and answer any blockchain questions.
 
-### **[Student 2: Backend Lead]**
+### **[Student 2: Backend Lead] (Updated Task)**
 
 * [ ] **(0:00 - 0:30)** Set up a new Node.js project: `npm init -y` and `npm install express`.
 * [ ] **(0:30 - 1:00)** Create `index.js`. Set up a basic Express server that `listen`s on a port (e.g., 3000).
 * [ ] **(1:00 - 1:15)** At the top of your file, create the token store: `const reviewTokens = new Map();`
 * [ ] **(1:15 - 2:15)** Build **Endpoint 1: `POST /request-review-token`**:
-    * It should expect a JSON body like `{ "productId": "..." }`.
+    * **(Updated)** It should expect a JSON body like `{ "userId": "...", "productId": "..." }`.
     * Generate a unique token (e.g., `const token = "token-" + Date.now();` or use `crypto.randomUUID()`).
-    * Store it: `reviewTokens.set(token, { productId: req.body.productId, used: false });`
+    * **(Updated)** Store it: `reviewTokens.set(token, { userId: req.body.userId, productId: req.body.productId, used: false });`
     * Send back the token: `res.json({ reviewToken: token });`
 * [ ] **(2:15 - 3:00)** Build **Endpoint 2: `POST /submit-review` (Logic STUB)**:
     * It should expect a JSON body like `{ "reviewToken": "...", "rating": 5, "comment": "..." }`.
@@ -126,7 +126,7 @@ This is how we'll get it done in 4 hours.
     * If valid: Mark as used `tokenData.used = true;` and send `200 OK`.
 * [ ] **(3:00 - 4:00)** Work with **Student 3** to integrate the Web3.js code into your `/submit-review` endpoint.
 
-### **[Student 3: Integration Lead]**
+### **[Student 3: Integration Lead] (No Change)**
 
 * [ ] **(0:00 - 0:30)** Set up your environment. Install **Postman**. Install Node.js if you don't have it.
 * [ ] **(0:30 - 1:00)** In the *same* Node.js project as Student 2, run `npm install web3`.
@@ -141,26 +141,35 @@ This is how we'll get it done in 4 hours.
     * `res.json(reviews);`
 * [ ] **(All Times)** Use Postman to test the endpoints as they are built.
 
-### **[Student 4: Frontend/Tester]**
+### **[Student 4: Frontend/Dashboard Lead] (Updated Plan)**
 
-* [ ] **(0:00 - 1:00)** Get familiar with the plan. Use **Postman** to test the API endpoints as Student 2 & 3 build them. Your job is to find bugs.
-    * Try sending a fake token.
-    * Try using a token twice.
-    * Try sending bad data (e.g., no comment).
-* [ ] **(1:00 - 2:00)** Create a simple `index.html` file on your computer.
-* [ ] **(2:00 - 3:00)** Add a "Simulate Host Server" button.
-    * When clicked, it should use `fetch()` to `POST` to `http://localhost:3000/request-review-token` with a hard-coded product ID.
-    * It should `console.log()` the `reviewToken` it gets back.
-* [ ] **(3:00 - 3:30)** Add a simple HTML form with fields for "Token," "Rating," and "Comment."
-    * Add a "Submit Review" button.
-    * When clicked, this button should use `fetch()` to `POST` the form's data to `http://localhost:3000/submit-review`.
-* [ ] **(3:30 - 4:00)** **Final Demo:** Run the full, end-to-end flow *from the browser*.
-    1.  Click Button 1 (Get Token).
-    2.  Copy the token from the console.
-    3.  Paste it into the form.
-    4.  Fill out the review and submit.
-    5.  Check the Ganache "Transactions" list to see the review get added.
-    6.  Use the `GET /reviews/:productId` endpoint to see the review data.
+* [ ] **(0:00 - 0:30)** Create an `index.html` file and a `script.js` file. Link `script.js` in your HTML.
+* [ ] **(0:30 - 1:30)** **Build UI Part 1: "Simulate Purchase"** (`index.html`)
+    * Create a `<select id="user-select">` dropdown with options for "User-123" and "User-456".
+    * Create a `<select id="product-select-request">` dropdown with options for "Product-A" and "Product-B".
+    * Add a button: `<button id="get-token-btn">Get Review Token</button>`.
+* [ ] **(1:30 - 2:00)** **Build UI Part 2: "Submit Review Form"** (`index.html`)
+    * Add text inputs: `<input id="token-input" placeholder="Token...">`.
+    * Add text inputs: `<input id="rating-input" placeholder="Rating (1-5)...">`.
+    * Add text inputs: `<input id="comment-input" placeholder="Comment...">`.
+    * Add a button: `<button id="submit-review-btn">Submit Review</button>`.
+* [ ] **(2:00 - 2:30)** **Build UI Part 3: "View Reviews"** (`index.html`)
+    * Create a `<select id="product-select-view">` (can copy from Part 1).
+    * Add a button: `<button id="fetch-reviews-btn">Fetch Reviews</button>`.
+    * Add a "results" block: `<pre id="results-display">Reviews will show here...</pre>`.
+* [ ] **(2:30 - 3:30)** **Implement JavaScript (`script.js`)**
+    * Add an event listener for `get-token-btn`.
+        * Inside, get the selected user and product values.
+        * Use `fetch()` to `POST` to `http://localhost:3000/request-review-token` with `{ userId, productId }`.
+        * Log the returned token to the console and display it on the page.
+    * Add an event listener for `submit-review-btn`.
+        * Inside, get the values from the token, rating, and comment inputs.
+        * Use `fetch()` to `POST` to `http://localhost:3000/submit-review`.
+    * Add an event listener for `fetch-reviews-btn`.
+        * Inside, get the selected product ID.
+        * Use `fetch()` to `GET` from `http://localhost:3000/reviews/PRODUCT_ID_HERE`.
+        * Display the JSON response in the `results-display` block.
+* [ ] **(3:30 - 4:00)** **Full End-to-End Testing:** Run the entire demo from the browser. Test all features and try to break the logic (e.g., use a token twice, try to submit for a different product).
 
 ---
 
@@ -168,11 +177,9 @@ This is how we'll get it done in 4 hours.
 
 1.  We have a Ganache instance running with our `ReviewContract` deployed.
 2.  We have a Node.js API server running.
-3.  We can use our `index.html` page (or Postman) to:
-    a. Get a valid, one-time-use token.
+3.  We can use our **`index.html` dashboard** to:
+    a. Get a valid, one-time-use token for a *specific* user and product.
     b. Use that token to successfully submit a review.
     c. See that review appear as a transaction in Ganache.
-    d. See the review data when we call the `GET /reviews` endpoint.
+    d. Fetch and see the review data for a specific product on our dashboard.
     e. **Prove** that submitting a review with a fake token or a used token *fails*.
-
-Good luck, team! Let's get this done.
