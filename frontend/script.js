@@ -109,7 +109,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     <div class="review-comment">"${r.comment}"</div>
                     <div class="review-meta">
                         <b>User:</b> ${r.userId}<br>
-                        <b>Product:</b> ${r.productId}<br>
+
                         <b>Timestamp:</b> ${new Date(r.timestamp * 1000).toLocaleString()}
                     </div>
                 </div>
