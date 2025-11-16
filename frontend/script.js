@@ -1,7 +1,7 @@
 // Wait for the DOM to be fully loaded before we run our script
 document.addEventListener("DOMContentLoaded", () => {
 
-    // API Server URL (from Student 2's plan)
+    // API Server URL 
     const API_URL = "http://localhost:3000";
 
     // --- Part 1 Elements ---
@@ -26,7 +26,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const productId = productSelectRequest.value;
 
         resultsDisplay.textContent = "Requesting token...";
-        
+
         try {
             const response = await fetch(`${API_URL}/request-review-token`, {
                 method: "POST",
@@ -35,9 +35,9 @@ document.addEventListener("DOMContentLoaded", () => {
             });
 
             if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-            
+
             const data = await response.json();
-            
+
             // Auto-fill the token into the next form
             tokenInput.value = data.reviewToken;
             resultsDisplay.textContent = `Token received: ${data.reviewToken}`;
@@ -69,13 +69,12 @@ document.addEventListener("DOMContentLoaded", () => {
             });
 
             if (!response.ok) {
-                // This will catch the 403 Forbidden errors for invalid/used tokens
                 throw new Error(`Review failed! Status: ${response.status} (${response.statusText})`);
             }
-            
+
             resultsDisplay.textContent = "Review submitted successfully! It is now on the blockchain.";
-            
-            // Clear the form for the next review
+
+            // Clear the form 
             tokenInput.value = "";
             ratingInput.value = "";
             commentInput.value = "";
@@ -90,23 +89,36 @@ document.addEventListener("DOMContentLoaded", () => {
     fetchReviewsBtn.addEventListener("click", async () => {
         const productId = productSelectView.value;
 
-        resultsDisplay.textContent = `Fetching reviews for ${productId}...`;
+        resultsDisplay.innerHTML = `<p>Fetching reviews for ${productId}...</p>`;
 
         try {
-            const response = await fetch(`${API_URL}/reviews/${productId}`, {
-                method: "GET"
-            });
-
+            const response = await fetch(`${API_URL}/reviews/${productId}`);
             if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-            
+
             const reviews = await response.json();
-            
-            // Display the JSON data in the <pre> tag, nicely formatted
-            resultsDisplay.textContent = JSON.stringify(reviews, null, 2);
+
+            if (reviews.length === 0) {
+                resultsDisplay.innerHTML = `<p>No reviews yet for ${productId}.</p>`;
+                return;
+            }
+
+            // Build formatted cards
+            resultsDisplay.innerHTML = reviews.map(r => `
+                <div class="review-card">
+                    <div class="stars">${"⭐".repeat(r.rating)}</div>
+                    <div class="review-comment">"${r.comment}"</div>
+                    <div class="review-meta">
+                        <b>User:</b> ${r.userId}<br>
+                        <b>Product:</b> ${r.productId}<br>
+                        <b>Timestamp:</b> ${new Date(r.timestamp).toLocaleString()}
+                    </div>
+                </div>
+            `).join("");
 
         } catch (error) {
             console.error("Error fetching reviews:", error);
-            resultsDisplay.textContent = `Error fetching reviews: ${error.message}`;
+            resultsDisplay.innerHTML = `<p>Error fetching reviews: ${error.message}</p>`;
         }
     });
-});
+
+}); // <-- THIS was missing!

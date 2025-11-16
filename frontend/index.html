@@ -4,62 +4,71 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Host Simulator Dashboard</title>
-    <style>
-        body { font-family: sans-serif; margin: 20px; }
-        fieldset { margin-bottom: 20px; padding: 15px; }
-        legend { font-size: 1.2em; font-weight: bold; }
-        input, select, button { display: block; width: 300px; margin-bottom: 10px; padding: 8px; font-size: 1em; }
-        pre { background-color: #f4f4f4; padding: 10px; border: 1px solid #ccc; }
-        #results-display { white-space: pre-wrap; word-wrap: break-word; }
-    </style>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <h1>Modular Review System: Host Simulator</h1>
 
-    <fieldset>
-        <legend>1. Simulate Purchase (Get Token)</legend>
-        <label for="user-select">Select User:</label>
-        <select id="user-select">
-            <option value="User-123">User-123</option>
-            <option value="User-456">User-456</option>
-        </select>
-        
-        <label for="product-select-request">Select Product:</label>
-        <select id="product-select-request">
-            <option value="Product-A">Product-A</option>
-            <option value="Product-B">Product-B</option>
-        </select>
-        
-        <button id="get-token-btn">Get Review Token</button>
-    </fieldset>
+    <div class="container">
 
-    <fieldset>
-        <legend>2. Submit Review</legend>
-        <label for="token-input">Review Token (from step 1):</label>
-        <input id="token-input" placeholder="Token will appear here...">
-        
-        <label for="rating-input">Rating (1-5):</label>
-        <input id="rating-input" type="number" min="1" max="5" placeholder="Rating (1-5)...">
-        
-        <label for="comment-input">Comment:</label>
-        <input id="comment-input" placeholder="Comment...">
-        
-        <button id="submit-review-btn">Submit Review</button>
-    </fieldset>
+        <fieldset class="section-box">
+            <legend class="section-title">1. Simulate Purchase (Get Token)</legend>
 
-    <fieldset>
-        <legend>3. View Reviews by Product</legend>
-        <label for="product-select-view">Select Product:</label>
-        <select id="product-select-view">
-            <option value="Product-A">Product-A</option>
-            <option value="Product-B">Product-B</option>
-        </select>
-        
-        <button id="fetch-reviews-btn">Fetch Reviews</button>
-        
-        <label>Results:</label>
-        <pre id="results-display">Reviews will show here...</pre>
-    </fieldset>
+            <label for="user-select">Select User:</label>
+            <select id="user-select">
+                <option value="User-123">User-123</option>
+                <option value="User-456">User-456</option>
+            </select>
+
+            <label for="product-select-request">Select Product:</label>
+            <select id="product-select-request">
+                <option value="Product-A">Product-A</option>
+                <option value="Product-B">Product-B</option>
+            </select>
+
+            <button id="get-token-btn">Purchase</button>
+        </fieldset>
+
+        <fieldset class="section-box">
+            <legend class="section-title">2. Submit Review</legend>
+
+            <label for="token-input">Review Token (from step 1):</label>
+            <input id="token-input" placeholder="Token will appear here...">
+
+            <label for="rating-input">Rating (1-5):</label>
+            <select id="rating-input">
+                <option value="">Select Rating...</option>
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+                <option value="4">4</option>
+                <option value="5">5</option>
+            </select>
+
+            <label for="comment-input">Comment:</label>
+            <input id="comment-input" placeholder="Comment...">
+
+            <button id="submit-review-btn">Submit Review</button>
+        </fieldset>
+
+        <fieldset class="section-box">
+            <legend class="section-title">3. View Reviews by Product</legend>
+
+            <label for="product-select-view">Select Product:</label>
+            <select id="product-select-view">
+                <option value="Product-A">Product-A</option>
+                <option value="Product-B">Product-B</option>
+            </select>
+
+            <button id="fetch-reviews-btn">Fetch Reviews</button>
+
+            <label>Results:</label>
+            <div id="results-display" class="results-box">
+                Reviews will show here...
+            </div>
+        </fieldset>
+
+    </div>
 
     <script src="script.js"></script>
 </body>
