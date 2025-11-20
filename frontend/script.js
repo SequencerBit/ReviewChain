@@ -1,30 +1,25 @@
-// Wait for the DOM to be fully loaded before we run our script
 document.addEventListener("DOMContentLoaded", () => {
 
-    // API Server URL 
     const API_URL = "http://localhost:3000";
 
-    // --- Part 1 Elements ---
+    // Elements
     const userSelect = document.getElementById("user-select");
     const productSelectRequest = document.getElementById("product-select-request");
     const getTokenBtn = document.getElementById("get-token-btn");
-
-    // --- Part 2 Elements ---
+    
     const tokenInput = document.getElementById("token-input");
     const ratingInput = document.getElementById("rating-input");
     const commentInput = document.getElementById("comment-input");
     const submitReviewBtn = document.getElementById("submit-review-btn");
 
-    // --- Part 3 Elements ---
     const productSelectView = document.getElementById("product-select-view");
     const fetchReviewsBtn = document.getElementById("fetch-reviews-btn");
     const resultsDisplay = document.getElementById("results-display");
 
-    // --- Event Listener for "Get Token" Button ---
+    // 1. Get Token
     getTokenBtn.addEventListener("click", async () => {
         const userId = userSelect.value;
         const productId = productSelectRequest.value;
-
         resultsDisplay.textContent = "Requesting token...";
 
         try {
@@ -35,20 +30,17 @@ document.addEventListener("DOMContentLoaded", () => {
             });
 
             if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-
             const data = await response.json();
 
-            // Auto-fill the token into the next form
             tokenInput.value = data.reviewToken;
-            resultsDisplay.textContent = `Token received: ${data.reviewToken}`;
-
+            resultsDisplay.textContent = `Token received: ${data.reviewToken} (Use this to submit or edit)`;
         } catch (error) {
             console.error("Error getting token:", error);
             resultsDisplay.textContent = `Error getting token: ${error.message}`;
         }
     });
 
-    // --- Event Listener for "Submit Review" Button ---
+    // 2. Submit Review
     submitReviewBtn.addEventListener("click", async () => {
         const reviewToken = tokenInput.value;
         const rating = parseInt(ratingInput.value, 10);
@@ -59,7 +51,7 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
 
-        resultsDisplay.textContent = "Submitting review...";
+        resultsDisplay.textContent = "Submitting to blockchain...";
 
         try {
             const response = await fetch(`${API_URL}/submit-review`, {
@@ -68,52 +60,72 @@ document.addEventListener("DOMContentLoaded", () => {
                 body: JSON.stringify({ reviewToken, rating, comment })
             });
 
-            if (!response.ok) {
-                throw new Error(`Review failed! Status: ${response.status} (${response.statusText})`);
-            }
-
-            resultsDisplay.textContent = "Review submitted successfully! It is now on the blockchain.";
-
-            // Clear the form 
+            if (!response.ok) throw new Error(`Review failed! Status: ${response.status}`);
+            resultsDisplay.textContent = "Review submitted/updated successfully!";
+            
             tokenInput.value = "";
             ratingInput.value = "";
             commentInput.value = "";
-
         } catch (error) {
             console.error("Error submitting review:", error);
             resultsDisplay.textContent = `Error submitting review: ${error.message}`;
         }
     });
 
-    // --- Event Listener for "Fetch Reviews" Button ---
+    // 3. Fetch & Process Reviews (Logic Changed Here)
     fetchReviewsBtn.addEventListener("click", async () => {
         const productId = productSelectView.value;
-
         resultsDisplay.innerHTML = `<p>Fetching reviews for ${productId}...</p>`;
 
         try {
             const response = await fetch(`${API_URL}/reviews/${productId}`);
             if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
 
-            const reviews = await response.json();
+            const rawReviews = await response.json();
 
-            if (reviews.length === 0) {
+            if (rawReviews.length === 0) {
                 resultsDisplay.innerHTML = `<p>No reviews yet for ${productId}.</p>`;
                 return;
             }
 
-            // Build formatted cards
-            resultsDisplay.innerHTML = reviews.map(r => `
-                <div class="review-card">
-                    <div class="stars">${"⭐".repeat(r.rating)}</div>
-                    <div class="review-comment">"${r.comment}"</div>
-                    <div class="review-meta">
-                        <b>User:</b> ${r.userId}<br>
-                        <b>Product:</b> ${r.productId}<br>
-                        <b>Timestamp:</b> ${new Date(r.timestamp * 1000).toLocaleString()}
+            // --- NEW GROUPING LOGIC ---
+            const groupedReviews = {};
+
+            // Group reviews by User ID
+            rawReviews.forEach(review => {
+                if (!groupedReviews[review.userId]) {
+                    groupedReviews[review.userId] = [];
+                }
+                groupedReviews[review.userId].push(review);
+            });
+
+            // Sort within groups by timestamp (newest first) and generate HTML
+            let htmlOutput = "";
+
+            for (const userId in groupedReviews) {
+                // Sort descending (newest time first)
+                const userHistory = groupedReviews[userId].sort((a, b) => b.timestamp - a.timestamp);
+                
+                // The most recent review is the "Active" one
+                const latest = userHistory[0];
+                // The rest are "History"
+                const history = userHistory.slice(1);
+
+                htmlOutput += `
+                    <div class="review-card" style="border-left: 4px solid #9b59b6;">
+                        <div style="display:flex; justify-content:space-between;">
+                            <strong>User: ${latest.userId}</strong>
+                            <span style="color:#888; font-size:0.8em;">${new Date(latest.timestamp * 1000).toLocaleString()}</span>
+                        </div>
+                        <div class="stars">${"⭐".repeat(latest.rating)}</div>
+                        <div class="review-comment" style="font-size: 1.1em; margin: 8px 0;">"${latest.comment}"</div>
+                        
+                        ${history.length > 0 ? generateHistoryHtml(history) : ''}
                     </div>
-                </div>
-            `).join("");
+                `;
+            }
+
+            resultsDisplay.innerHTML = htmlOutput;
 
         } catch (error) {
             console.error("Error fetching reviews:", error);
@@ -121,4 +133,22 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-}); // <-- THIS was missing!
+    // Helper function to generate HTML for edit history
+    function generateHistoryHtml(historyReviews) {
+        let historyItems = historyReviews.map(r => `
+            <li style="margin-bottom: 5px; padding-bottom: 5px; border-bottom: 1px solid #444;">
+                <small style="color: #aaa;">${new Date(r.timestamp * 1000).toLocaleString()}</small><br>
+                <span>${"⭐".repeat(r.rating)}</span> - <i style="color: #ccc;">"${r.comment}"</i>
+            </li>
+        `).join("");
+
+        return `
+            <details style="margin-top: 10px; background: #222; padding: 5px; border-radius: 4px;">
+                <summary style="cursor: pointer; color: #9b59b6; font-size: 0.9em;">View Edit History (${historyReviews.length} older versions)</summary>
+                <ul style="list-style: none; padding-left: 5px; margin-top: 10px;">
+                    ${historyItems}
+                </ul>
+            </details>
+        `;
+    }
+});
