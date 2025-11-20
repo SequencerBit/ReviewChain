@@ -1,36 +1,30 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-/**
- * @title ReviewContract
- * @dev Stores product reviews immutably on the blockchain.
- */
 contract ReviewContract {
 
-    // This is a "struct," like a custom data type or a class object.
-    // It defines what a "Review" looks like.
     struct Review {
         string userId;
         string productId;
-        uint8 rating;       // A number from 0-255 (perfect for 1-5 stars)
+        uint8 rating;
         string comment;
-        uint timestamp;    // The time the review was submitted
+        uint timestamp;
     }
 
-    // This is our "database."
-    // It maps a "string" (the product ID) to an "array of Reviews."
+    // Map ProductID => Array of Reviews
     mapping(string => Review[]) public reviewsByProduct;
 
-    /**
-     * @dev Adds a new review to a product's review array.
-     * This is the ONLY function our API will "write" to.
-     */
+    // NEW: Map ProductID => UserID => HasReviewed (To track edits)
+    mapping(string => mapping(string => bool)) public userHasReviewed;
+
+    // NEW: Events to log distinct actions
+    event ReviewAdded(string indexed productId, string indexed userId, uint timestamp);
+    event ReviewUpdated(string indexed productId, string indexed userId, uint timestamp);
+
     function addReview(string memory _userId, string memory _productId, uint8 _rating, string memory _comment) public {
         
-        // Get the current time from the blockchain
         uint _timestamp = block.timestamp;
-        
-        // Create the new Review object in memory
+
         Review memory newReview = Review(
             _userId,
             _productId,
@@ -38,16 +32,21 @@ contract ReviewContract {
             _comment,
             _timestamp
         );
-        
-        // Add the new review to the array for that specific product
+
+        // Push the review to the array (History is ALWAYS preserved on blockchain)
         reviewsByProduct[_productId].push(newReview);
+
+        // NEW: Logic to determine if this is a specific Edit or a New Review
+        if (userHasReviewed[_productId][_userId]) {
+            // User has reviewed before, so this is an UPDATE
+            emit ReviewUpdated(_productId, _userId, _timestamp);
+        } else {
+            // First time reviewing this product
+            userHasReviewed[_productId][_userId] = true;
+            emit ReviewAdded(_productId, _userId, _timestamp);
+        }
     }
 
-    /**
-     * @dev Gets all reviews for a specific product ID.
-     * NEW FUNCTION: This is needed because web3.js can't read an entire 
-     * array from a public mapping directly.
-     */
     function getReviewsByProduct(string memory _productId) public view returns (Review[] memory) {
         return reviewsByProduct[_productId];
     }
