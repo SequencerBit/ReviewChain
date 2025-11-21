@@ -3,70 +3,93 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Host Simulator Dashboard</title>
+    <title>ReviewChain Store</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <h1>Modular Review System: Host Simulator</h1>
+
+    <nav class="navbar hidden" id="navbar">
+        <div class="nav-logo" onclick="window.location.reload()">ReviewChain</div>
+        <div class="nav-search">
+            <input type="text" id="search-bar" placeholder="Search products...">
+            <button class="search-btn">🔍</button>
+        </div>
+        <div class="nav-user">
+            <span id="nav-greeting">Hello, Sign in</span>
+        </div>
+    </nav>
 
     <div class="container">
 
-        <fieldset class="section-box">
-            <legend class="section-title">1. Simulate Purchase (Get Token)</legend>
+        <div id="login-page" class="page-section">
+            <div class="login-card">
+                <h2>Sign in</h2>
+                
+                <label for="username-input">Username</label>
+                <input type="text" id="username-input" placeholder="Enter your username">
+                
+                <label for="password-input" style="margin-top: 15px;">Password</label>
+                <input type="password" id="password-input" placeholder="Enter your password">
 
-            <label for="user-select">Select User:</label>
-            <select id="user-select">
-                <option value="User-123">User-123</option>
-                <option value="User-456">User-456</option>
-            </select>
-
-            <label for="product-select-request">Select Product:</label>
-            <select id="product-select-request">
-                <option value="Product-A">Product-A</option>
-                <option value="Product-B">Product-B</option>
-            </select>
-
-            <button id="get-token-btn">Purchase</button>
-        </fieldset>
-
-        <fieldset class="section-box">
-            <legend class="section-title">2. Submit Review</legend>
-
-            <label for="token-input">Review Token (from step 1):</label>
-            <input id="token-input" placeholder="Token will appear here...">
-
-            <label for="rating-input">Rating (1-5):</label>
-            <select id="rating-input">
-                <option value="">Select Rating...</option>
-                <option value="1">1</option>
-                <option value="2">2</option>
-                <option value="3">3</option>
-                <option value="4">4</option>
-                <option value="5">5</option>
-            </select>
-
-            <label for="comment-input">Comment:</label>
-            <input id="comment-input" placeholder="Comment...">
-
-            <button id="submit-review-btn">Submit Review</button>
-        </fieldset>
-
-        <fieldset class="section-box">
-            <legend class="section-title">3. View Reviews by Product</legend>
-
-            <label for="product-select-view">Select Product:</label>
-            <select id="product-select-view">
-                <option value="Product-A">Product-A</option>
-                <option value="Product-B">Product-B</option>
-            </select>
-
-            <button id="fetch-reviews-btn">Fetch Reviews</button>
-
-            <label>Results:</label>
-            <div id="results-display" class="results-box">
-                Reviews will show here...
+                <button id="login-btn" class="primary-btn" style="margin-top: 15px;">Sign in</button>
+                <p class="disclaimer">By continuing, you agree to ReviewChain's Conditions of Use and Privacy Notice.</p>
             </div>
-        </fieldset>
+        </div>
+
+        <div id="home-page" class="page-section hidden">
+            <div class="product-grid" id="product-grid">
+                </div>
+        </div>
+
+        <div id="product-page" class="page-section hidden">
+            <button id="back-btn" class="secondary-btn">← Back to results</button>
+            
+            <div class="product-detail-container">
+                <div class="product-image-section">
+                    <img id="detail-image" src="" alt="Product">
+                </div>
+
+                <div class="product-info-section">
+                    <h2 id="detail-title">Product Title</h2>
+                    <div class="rating-stars">⭐⭐⭐⭐☆ <span id="review-count-badge">...</span></div>
+                    <hr>
+                    <p class="price-tag">$<span id="detail-price">0.00</span></p>
+                    <p id="detail-desc">Description goes here...</p>
+                </div>
+
+                <div class="buy-box">
+                    <p class="price-tag">$<span id="buy-box-price">0.00</span></p>
+                    <p class="stock-status">In Stock.</p>
+                    <button id="buy-now-btn" class="primary-btn full-width">Buy Now</button>
+                    <div id="purchase-message" class="hidden success-msg">✅ Verified Purchase</div>
+                </div>
+            </div>
+
+            <hr class="separator">
+
+            <div class="reviews-section">
+                <h3>Customer Reviews</h3>
+                
+                <div id="write-review-container" class="hidden">
+                    <div class="write-review-card">
+                        <h4>Write a customer review</h4>
+                        <select id="review-rating">
+                            <option value="5">⭐⭐⭐⭐⭐ (5)</option>
+                            <option value="4">⭐⭐⭐⭐ (4)</option>
+                            <option value="3">⭐⭐⭐ (3)</option>
+                            <option value="2">⭐⭐ (2)</option>
+                            <option value="1">⭐ (1)</option>
+                        </select>
+                        <textarea id="review-comment" placeholder="Share your thoughts..."></textarea>
+                        <input type="hidden" id="review-token-hidden">
+                        <button id="submit-review-btn" class="secondary-btn">Submit Review</button>
+                    </div>
+                </div>
+
+                <div id="reviews-list">
+                    </div>
+            </div>
+        </div>
 
     </div>
 

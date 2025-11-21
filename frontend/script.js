@@ -1,154 +1,288 @@
 document.addEventListener("DOMContentLoaded", () => {
-
     const API_URL = "http://localhost:3000";
-
-    // Elements
-    const userSelect = document.getElementById("user-select");
-    const productSelectRequest = document.getElementById("product-select-request");
-    const getTokenBtn = document.getElementById("get-token-btn");
     
-    const tokenInput = document.getElementById("token-input");
-    const ratingInput = document.getElementById("rating-input");
-    const commentInput = document.getElementById("comment-input");
-    const submitReviewBtn = document.getElementById("submit-review-btn");
+    // State
+    let currentUser = null;
+    let currentProduct = null;
+    let activeReviewToken = null;
 
-    const productSelectView = document.getElementById("product-select-view");
-    const fetchReviewsBtn = document.getElementById("fetch-reviews-btn");
-    const resultsDisplay = document.getElementById("results-display");
+    // --- MOCK DATABASE ---
+    
+    // 1. Existing Users (No items purchased yet)
+    const validUsers = [
+        { username: "Alice", password: "password123" },
+        { username: "Bob",   password: "password123" },
+        { username: "Charlie", password: "password123" }
+    ];
 
-    // 1. Get Token
-    getTokenBtn.addEventListener("click", async () => {
-        const userId = userSelect.value;
-        const productId = productSelectRequest.value;
-        resultsDisplay.textContent = "Requesting token...";
+    // 2. Hardcoded Products
+    const products = [
+        {
+            id: "Product-A",
+            title: "Wireless Noise Cancelling Headphones, Bluetooth 5.0",
+            price: 299.99,
+            image:"images/earphone.png",
+            desc: "Experience world-class noise cancellation and premium sound quality with these top-tier headphones."
+        },
+        {
+            id: "Product-B",
+            title: "4K Ultra HD Smart LED TV, 55-Inch Class",
+            price: 450.00,
+            image: "images/tv.jpg",
+            desc: "Stunning 4K visuals with vibrant colors and built-in smart streaming apps."
+        },
+        {
+            id: "Product-C",
+            title: "Mechanical Gaming Keyboard, RGB Backlit",
+            price: 89.99,
+            image: "images/keyboard.jpg",
+            desc: "Tactile mechanical switches for the ultimate gaming performance and typing experience."
+        },
+        {
+            id: "Product-D",
+            title: "Stainless Steel Insulated Water Bottle, 32oz",
+            price: 24.95,
+            image: "images/bottle.jpg",
+            desc: "Keeps beverages cold for 24 hours or hot for 12 hours. Durable and leak-proof."
+        }
+    ];
 
-        try {
-            const response = await fetch(`${API_URL}/request-review-token`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ userId, productId })
-            });
+    // --- NAVIGATION ---
+    const loginPage = document.getElementById("login-page");
+    const homePage = document.getElementById("home-page");
+    const productPage = document.getElementById("product-page");
+    const navbar = document.getElementById("navbar");
+    const navGreeting = document.getElementById("nav-greeting");
 
-            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-            const data = await response.json();
+    function showLogin() {
+        loginPage.classList.remove("hidden");
+        homePage.classList.add("hidden");
+        productPage.classList.add("hidden");
+        navbar.classList.add("hidden");
+        
+        // Clear inputs
+        document.getElementById("username-input").value = "";
+        document.getElementById("password-input").value = "";
+    }
 
-            tokenInput.value = data.reviewToken;
-            resultsDisplay.textContent = `Token received: ${data.reviewToken} (Use this to submit or edit)`;
-        } catch (error) {
-            console.error("Error getting token:", error);
-            resultsDisplay.textContent = `Error getting token: ${error.message}`;
+    function showHome() {
+        loginPage.classList.add("hidden");
+        homePage.classList.remove("hidden");
+        productPage.classList.add("hidden");
+        navbar.classList.remove("hidden");
+        renderProductGrid();
+    }
+
+    function showProduct(product) {
+        currentProduct = product;
+        activeReviewToken = null; // Reset token on new product view
+        
+        loginPage.classList.add("hidden");
+        homePage.classList.add("hidden");
+        productPage.classList.remove("hidden");
+        navbar.classList.remove("hidden");
+
+        // Fill Info
+        document.getElementById("detail-image").src = product.image;
+        document.getElementById("detail-title").textContent = product.title;
+        document.getElementById("detail-price").textContent = product.price;
+        document.getElementById("buy-box-price").textContent = product.price;
+        document.getElementById("detail-desc").textContent = product.desc;
+
+        // Reset Buy Box State
+        document.getElementById("buy-now-btn").classList.remove("hidden");
+        document.getElementById("purchase-message").classList.add("hidden");
+        document.getElementById("write-review-container").classList.add("hidden");
+
+        // Load Reviews from Blockchain
+        fetchReviews(product.id);
+    }
+
+    // --- LOGIN LOGIC (Updated) ---
+    document.getElementById("login-btn").addEventListener("click", () => {
+        const usernameInput = document.getElementById("username-input").value.trim();
+        const passwordInput = document.getElementById("password-input").value.trim();
+
+        // Check against mock DB
+        const user = validUsers.find(u => u.username === usernameInput && u.password === passwordInput);
+
+        if (user) {
+            currentUser = user.username;
+            navGreeting.textContent = `Hello, ${currentUser}`;
+            showHome();
+        } else {
+            alert("Invalid username or password. Please try again.");
         }
     });
 
-    // 2. Submit Review
-    submitReviewBtn.addEventListener("click", async () => {
-        const reviewToken = tokenInput.value;
-        const rating = parseInt(ratingInput.value, 10);
-        const comment = commentInput.value;
+    // --- HOME PAGE LOGIC ---
+    function renderProductGrid() {
+        const grid = document.getElementById("product-grid");
+        grid.innerHTML = "";
+        products.forEach(p => {
+            const card = document.createElement("div");
+            card.className = "product-card";
+            card.innerHTML = `
+                <img src="${p.image}" alt="${p.title}">
+                <div class="p-title">${p.title}</div>
+                <div class="p-price"><sup>$</sup>${Math.floor(p.price)}<sup>${(p.price % 1).toFixed(2).substring(2)}</sup></div>
+            `;
+            card.addEventListener("click", () => showProduct(p));
+            grid.appendChild(card);
+        });
+    }
 
-        if (!reviewToken || !rating || !comment) {
-            resultsDisplay.textContent = "Error: Please fill in token, rating, and comment.";
+    // --- PRODUCT DETAILS LOGIC ---
+    document.getElementById("back-btn").addEventListener("click", showHome);
+
+    // BUY BUTTON (Simulates Purchase -> Requests Token)
+    document.getElementById("buy-now-btn").addEventListener("click", async () => {
+        if (!currentUser || !currentProduct) return;
+
+        const btn = document.getElementById("buy-now-btn");
+        btn.textContent = "Processing...";
+        btn.disabled = true;
+
+        try {
+            // Request token from backend
+            const response = await fetch(`${API_URL}/request-review-token`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ userId: currentUser, productId: currentProduct.id })
+            });
+
+            if (!response.ok) throw new Error("Purchase failed");
+
+            const data = await response.json();
+            activeReviewToken = data.reviewToken;
+
+            // Update UI to show "Verified Purchase" state
+            btn.classList.add("hidden");
+            document.getElementById("purchase-message").classList.remove("hidden");
+            document.getElementById("write-review-container").classList.remove("hidden"); // Unlock Review Form
+            
+            alert("Purchase Successful! You can now review this product.");
+
+        } catch (error) {
+            console.error("Buy error:", error);
+            alert("Error processing purchase.");
+        } finally {
+            btn.disabled = false;
+            btn.textContent = "Buy Now";
+        }
+    });
+
+    // SUBMIT REVIEW
+    document.getElementById("submit-review-btn").addEventListener("click", async () => {
+        const rating = document.getElementById("review-rating").value;
+        const comment = document.getElementById("review-comment").value;
+
+        if (!rating || !comment) {
+            alert("Please provide a rating and comment.");
             return;
         }
 
-        resultsDisplay.textContent = "Submitting to blockchain...";
+        const btn = document.getElementById("submit-review-btn");
+        btn.textContent = "Submitting to Blockchain...";
+        btn.disabled = true;
 
         try {
             const response = await fetch(`${API_URL}/submit-review`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ reviewToken, rating, comment })
+                body: JSON.stringify({ 
+                    reviewToken: activeReviewToken, 
+                    rating: parseInt(rating), 
+                    comment: comment 
+                })
             });
 
-            if (!response.ok) throw new Error(`Review failed! Status: ${response.status}`);
-            resultsDisplay.textContent = "Review submitted/updated successfully!";
-            
-            tokenInput.value = "";
-            ratingInput.value = "";
-            commentInput.value = "";
+            if (!response.ok) throw new Error("Submission failed");
+
+            // Success
+            document.getElementById("review-comment").value = "";
+            alert("Review submitted successfully!");
+            fetchReviews(currentProduct.id); // Refresh list
+
         } catch (error) {
-            console.error("Error submitting review:", error);
-            resultsDisplay.textContent = `Error submitting review: ${error.message}`;
+            console.error("Submit error:", error);
+            alert("Failed to submit review. " + error.message);
+        } finally {
+            btn.disabled = false;
+            btn.textContent = "Submit Review";
         }
     });
 
-    // 3. Fetch & Process Reviews (Logic Changed Here)
-    fetchReviewsBtn.addEventListener("click", async () => {
-        const productId = productSelectView.value;
-        resultsDisplay.innerHTML = `<p>Fetching reviews for ${productId}...</p>`;
+    // --- FETCH & RENDER REVIEWS (One Review Per User Logic) ---
+    async function fetchReviews(productId) {
+        const list = document.getElementById("reviews-list");
+        const badge = document.getElementById("review-count-badge");
+        list.innerHTML = "<p>Loading reviews from blockchain...</p>";
 
         try {
             const response = await fetch(`${API_URL}/reviews/${productId}`);
-            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-
+            if (!response.ok) throw new Error("Fetch failed");
+            
             const rawReviews = await response.json();
+            badge.textContent = `(${rawReviews.length})`;
 
             if (rawReviews.length === 0) {
-                resultsDisplay.innerHTML = `<p>No reviews yet for ${productId}.</p>`;
+                list.innerHTML = "<p>No reviews yet.</p>";
                 return;
             }
 
-            // --- NEW GROUPING LOGIC ---
-            const groupedReviews = {};
-
-            // Group reviews by User ID
-            rawReviews.forEach(review => {
-                if (!groupedReviews[review.userId]) {
-                    groupedReviews[review.userId] = [];
-                }
-                groupedReviews[review.userId].push(review);
+            // GROUPING LOGIC (One Review Per User + History)
+            const grouped = {};
+            rawReviews.forEach(r => {
+                if (!grouped[r.userId]) grouped[r.userId] = [];
+                grouped[r.userId].push(r);
             });
 
-            // Sort within groups by timestamp (newest first) and generate HTML
-            let htmlOutput = "";
+            let html = "";
+            for (const user in grouped) {
+                // Sort descending by timestamp
+                const history = grouped[user].sort((a, b) => b.timestamp - a.timestamp);
+                const latest = history[0];
+                const older = history.slice(1);
 
-            for (const userId in groupedReviews) {
-                // Sort descending (newest time first)
-                const userHistory = groupedReviews[userId].sort((a, b) => b.timestamp - a.timestamp);
-                
-                // The most recent review is the "Active" one
-                const latest = userHistory[0];
-                // The rest are "History"
-                const history = userHistory.slice(1);
-
-                htmlOutput += `
-                    <div class="review-card" style="border-left: 4px solid #9b59b6;">
-                        <div style="display:flex; justify-content:space-between;">
-                            <strong>User: ${latest.userId}</strong>
-                            <span style="color:#888; font-size:0.8em;">${new Date(latest.timestamp * 1000).toLocaleString()}</span>
+                html += `
+                    <div class="review-card">
+                        <div class="review-user">
+                            <img src="https://via.placeholder.com/30?text=U" style="border-radius:50%; width:25px;"> 
+                            ${latest.userId}
                         </div>
-                        <div class="stars">${"⭐".repeat(latest.rating)}</div>
-                        <div class="review-comment" style="font-size: 1.1em; margin: 8px 0;">"${latest.comment}"</div>
+                        <div class="review-stars">${"⭐".repeat(latest.rating)}</div>
+                        <div class="review-meta">Reviewed on ${new Date(latest.timestamp * 1000).toLocaleDateString()}</div>
+                        <div class="review-body">${latest.comment}</div>
                         
-                        ${history.length > 0 ? generateHistoryHtml(history) : ''}
+                        ${older.length > 0 ? renderHistory(older) : ""}
                     </div>
                 `;
             }
-
-            resultsDisplay.innerHTML = htmlOutput;
+            list.innerHTML = html;
 
         } catch (error) {
-            console.error("Error fetching reviews:", error);
-            resultsDisplay.innerHTML = `<p>Error fetching reviews: ${error.message}</p>`;
+            console.error(error);
+            list.innerHTML = "<p>Error loading reviews.</p>";
         }
-    });
+    }
 
-    // Helper function to generate HTML for edit history
-    function generateHistoryHtml(historyReviews) {
-        let historyItems = historyReviews.map(r => `
-            <li style="margin-bottom: 5px; padding-bottom: 5px; border-bottom: 1px solid #444;">
-                <small style="color: #aaa;">${new Date(r.timestamp * 1000).toLocaleString()}</small><br>
-                <span>${"⭐".repeat(r.rating)}</span> - <i style="color: #ccc;">"${r.comment}"</i>
+    function renderHistory(historyItems) {
+        const itemsHtml = historyItems.map(r => `
+            <li style="margin-top: 5px; border-top: 1px solid #eee; padding-top: 5px;">
+                <span style="font-size:11px; color:#888;">${new Date(r.timestamp * 1000).toLocaleString()}</span><br>
+                <span>${"⭐".repeat(r.rating)}</span> ${r.comment}
             </li>
         `).join("");
 
         return `
-            <details style="margin-top: 10px; background: #222; padding: 5px; border-radius: 4px;">
-                <summary style="cursor: pointer; color: #9b59b6; font-size: 0.9em;">View Edit History (${historyReviews.length} older versions)</summary>
-                <ul style="list-style: none; padding-left: 5px; margin-top: 10px;">
-                    ${historyItems}
-                </ul>
+            <details style="margin-top: 10px;">
+                <summary style="color: #007185; cursor: pointer; font-size: 13px;">View Edit History</summary>
+                <ul style="list-style:none; padding-left: 10px; font-size: 13px;">${itemsHtml}</ul>
             </details>
         `;
     }
+
+    // Start on Login Page
+    showLogin();
 });
